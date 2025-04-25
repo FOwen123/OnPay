@@ -7,16 +7,21 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title IDRXPaymentContract
- * @dev Contract to facilitate payments in IDRX tokens */
+ * @dev Contract to facilitate payments in IDRX tokens 
+ * */
 contract IDRXPayment is Ownable{
     // Error messages
     error IDRXPayment__InvalidTokenAddress();
     error IDRXPayment__AmountMustBeGreaterThanZero();
     error IDRXPayment__InvalidReceiverAddress();
-    error IDRXPayment__CantSentToYourself();
     error IDRXPayment__TransferFailed();
+    error IDRXPayment__FeeTransferFailed();
+    error IDRXPayment__InvalidForwarderAddress();
+    error IDRXPayment__UnauthorizedForwarder(); 
 
     IERC20 public idrxToken;
+    address public trustedForwarder;
+    uint256 public feePercentage = 100;
 
     // Event emitted on successfull payment
     event PaymentCompleted(
@@ -26,25 +31,30 @@ contract IDRXPayment is Ownable{
         uint256 timestamp
     );
 
-    constructor(address _idrxToken) Ownable(msg.sender){
+    // Event emitted when the forwarder is updated
+    event ForwarderUpdated(
+        address indexed forwarder
+    );
+
+    constructor(address _idrxToken, address _forwarder) Ownable(msg.sender){
         require(_idrxToken != address(0), IDRXPayment__InvalidTokenAddress());
+        require(_forwarder != address(0), IDRXPayment__InvalidForwarderAddress());
         idrxToken = IERC20(_idrxToken);
+        trustedForwarder = _forwarder;
+        emit ForwarderUpdated(_forwarder);
     }
 
-    function updateTokenAddress(address _newIdrxToken) external onlyOwner {
-        require(_newIdrxToken != address(0), IDRXPayment__InvalidTokenAddress());
-        idrxToken = IERC20(_newIdrxToken);
-    }
-    
-    function sendIDRX(address _receiver, uint256 _amount) external returns (bool success){
+    function sendIDRXMeta(address _sender, address _receiver, uint256 _amount) external{
+        require(msg.sender == trustedForwarder, IDRXPayment__UnauthorizedForwarder());
         require(_amount > 0, IDRXPayment__AmountMustBeGreaterThanZero());
-        require(_receiver != address(0), IDRXPayment__InvalidReceiverAddress());
-        require(_receiver != msg.sender, IDRXPayment__CantSentToYourself());
+        require(_sender != _receiver && _receiver != address(0), IDRXPayment__InvalidReceiverAddress());
 
-        bool transferSuccess = idrxToken.transferFrom(msg.sender, _receiver, _amount);
-        require(transferSuccess, IDRXPayment__TransferFailed());
+        uint256 fee = (_amount * feePercentage) / 10000; // 1% fee
+        uint256 netAmount = _amount - fee;
 
-        emit PaymentCompleted(msg.sender, _receiver, _amount, block.timestamp);
-        return true;
+        require(idrxToken.transferFrom(_sender, _receiver, netAmount), IDRXPayment__TransferFailed());
+        require(idrxToken.transferFrom(_sender, tx.origin, fee), IDRXPayment__FeeTransferFailed());
+
+        emit PaymentCompleted(_sender, _receiver, _amount, block.timestamp);
     }
 }
