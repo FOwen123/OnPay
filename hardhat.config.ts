@@ -3,7 +3,15 @@ import "@nomicfoundation/hardhat-toolbox";
 import "dotenv/config";
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.28",
+  solidity: {
+    version: "0.8.28",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 100,
+      },
+    },
+  },
   networks: {
     liskSepolia: {
       url: "https://rpc.sepolia-api.lisk.com",
