@@ -13,6 +13,11 @@ const config: HardhatUserConfig = {
     },
   },
   networks: {
+    sepolia:{
+      url: process.env.SEPOLIA_RPC_URL || "",
+      chainId: 11155111,
+      accounts: [process.env.PRIVATE_KEY!],
+    },
     liskSepolia: {
       url: "https://rpc.sepolia-api.lisk.com",
       chainId: 4202,
@@ -31,6 +36,7 @@ const config: HardhatUserConfig = {
       },
     ],
     apiKey: {
+      sepolia: process.env.ETHERSCAN_API_KEY || "",
       liskSepolia: "dummy-key", 
     },
   }

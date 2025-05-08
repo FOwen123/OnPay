@@ -8,6 +8,7 @@
   "dependencies": {
     "@ensdomains/ens-contracts": "^1.4.0",
     "@openzeppelin/contracts": "^5.3.0",
+    "axios": "^1.9.0",
     "viem": "^2.28.3"
   }
 }
