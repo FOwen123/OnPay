@@ -10,6 +10,10 @@ interface IIDRXPayment {
     ) external;
 }
 
+interface IL2Registrar {
+    function register(string calldata label, address owner) external;
+}
+
 contract MetaTxForwarder {
     error MetaTxForwarder__InvalidSignatureLength();
     error MetaTxForwarder__InvalidSignature();
@@ -73,4 +77,32 @@ contract MetaTxForwarder {
         
         emit MetaTransactionExecuted(_sender, msg.sender);
     }
+
+    function executeENSMetaTx(
+        address _sender,
+        string calldata _label,
+        address _targetContract,
+        bytes memory signature
+    ) external {
+        uint256 nonce = nonces[_sender];
+
+        bytes32 messageHash = keccak256(abi.encodePacked(
+            _sender,
+            _label,
+            _targetContract,
+            nonce
+        ));
+
+        bytes32 ethSignedMessageHash = getEthSignedMessageHash(messageHash);
+
+        require(recoverSigner(ethSignedMessageHash, signature) == _sender, MetaTxForwarder__InvalidSignature());
+
+        nonces[_sender]++;
+
+        // Forward the call to the ENS registrar
+        IL2Registrar(_targetContract).register(_label, _sender);
+
+        emit MetaTransactionExecuted(_sender, msg.sender);
+}
+
 }

@@ -10,6 +10,23 @@ function getSelector(signature: string): `0x${string}` {
     return toHex(keccak256(stringToBytes(signature))).slice(0, 10) as `0x${string}`;
 }
 
+function dnsDecode(encoded: string): string {
+    if (encoded.startsWith('0x')) encoded = encoded.slice(2)
+  
+    let i = 0
+    let name = ''
+  
+    while (i < encoded.length) {
+      const len = parseInt(encoded.slice(i, i + 2), 16)
+      if (len === 0) break // End of DNS name
+      const part = Buffer.from(encoded.slice(i + 2, i + 2 + len * 2), 'hex').toString()
+      name += name ? '.' + part : part
+      i += 2 + len * 2
+    }
+  
+    return name
+}
+
 const selector = getSelector("addr(bytes32)");
 console.log(getSelector("addr(bytes32)")); // ✅ 0x3b3b57de
 
@@ -23,4 +40,7 @@ const callData = selectorEthers + nameHash.slice(2);
 console.log(callData);
 console.log(callData as `0x${string}`);
 
+const encoded = "0x096e69656c646572746f046c69736b0365746800";
+const name = dnsDecode(encoded);
+console.log(name);
 
