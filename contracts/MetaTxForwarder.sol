@@ -78,6 +78,15 @@ contract MetaTxForwarder {
         emit MetaTransactionExecuted(_sender, msg.sender);
     }
 
+    function getENSMessageHash(address _sender, string memory _label, address _targetContract, uint256 _nonce) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(
+            _sender,
+            _label,
+            _targetContract,
+            _nonce
+        ));
+    }
+
     function executeENSMetaTx(
         address _sender,
         string calldata _label,
@@ -86,12 +95,7 @@ contract MetaTxForwarder {
     ) external {
         uint256 nonce = nonces[_sender];
 
-        bytes32 messageHash = keccak256(abi.encodePacked(
-            _sender,
-            _label,
-            _targetContract,
-            nonce
-        ));
+        bytes32 messageHash = getENSMessageHash(_sender, _label, _targetContract, nonce);
 
         bytes32 ethSignedMessageHash = getEthSignedMessageHash(messageHash);
 
